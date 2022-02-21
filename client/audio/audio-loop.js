@@ -15,30 +15,46 @@
  * limitations under the License.
  */
 class AudioLoop {
-  constructor(metronome, visualizer, defaultVelocity, defaultInstrument, callback) {
+  constructor(
+    metronome,
+    visualizer,
+    defaultVelocity,
+    defaultInstrument,
+    callback
+  ) {
     this.metronome = metronome;
     this.visualizer = visualizer;
     this.events = [];
 
-    this.playerMelody = new window.core.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus');
-    this.playerDrums = new window.core.SoundFontPlayer('https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus');
+    this.playerMelody = new window.core.SoundFontPlayer(
+      "https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
+    );
+    this.playerDrums = new window.core.SoundFontPlayer(
+      "https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
+    );
 
     this.playerMelody.callbackObject = {
       run: (note) => {
-        if (this.playerMelody) this.playerMelody.currentPart.mute = this.melodyMuted;
+        if (this.playerMelody)
+          this.playerMelody.currentPart.mute = this.melodyMuted;
       },
-      stop: () => {}
-    }
+      stop: () => {},
+    };
     this.playerDrums.callbackObject = {
       run: (note) => {
-        if (this.playerDrums) this.playerDrums.currentPart.mute = this.drumsMuted;
+        if (this.playerDrums)
+          this.playerDrums.currentPart.mute = this.drumsMuted;
       },
-      stop: () => {}
-    }
+      stop: () => {},
+    };
 
-    const ns = {notes:[]};
+    const ns = { notes: [] };
     for (let i = 21; i < 108; i++) {
-      ns.notes.push({pitch: i, velocity: defaultVelocity, program: defaultInstrument});
+      ns.notes.push({
+        pitch: i,
+        velocity: defaultVelocity,
+        program: defaultInstrument,
+      });
     }
     this.playerMelody.loadSamples(ns).then(callback);
     this.reset();
@@ -51,7 +67,7 @@ class AudioLoop {
     this.freezeDrums = false;
     this.drumsMuted = false;
     this.melodyMuted = false;
-    this.melody = null
+    this.melody = null;
     this.drums = null;
     this.ready = false;
   }
@@ -70,10 +86,13 @@ class AudioLoop {
   addMelody(seq, time) {
     this.reset();
     const lastNote = seq.notes[seq.notes.length - 1];
-    this.events.push({type:'add-melody', time, seq});
-    this.events.push({type:'loop-melody', time});
+    this.events.push({ type: "add-melody", time, seq });
+    this.events.push({ type: "loop-melody", time });
 
-    this.totalTime = 60 / this.metronome.bpm * 4 /* quarters per bar */ * 2 /*number of bars*/;
+    this.totalTime =
+      (60 / this.metronome.bpm) *
+      4 /* quarters per bar */ *
+      2 /*number of bars*/;
     this.melody = seq;
     this.melody.totalTime = this.totalTime;
     this.ready = true;
@@ -86,7 +105,7 @@ class AudioLoop {
     if (this.nextDrums) {
       this.drums = this.nextDrums;
       this.nextDrums = null;
-      this.events.push({type:'add-drums', time, seq: this.drums});
+      this.events.push({ type: "add-drums", time, seq: this.drums });
     }
   }
 
@@ -103,7 +122,7 @@ class AudioLoop {
 
   loop(time) {
     this.stop();
-    const seq = {notes:[]};
+    const seq = { notes: [] };
 
     if (this.melody) {
       // if (this.playerMelody.currentPart) {
@@ -114,7 +133,7 @@ class AudioLoop {
       }
       this.visualizer.showMelody(this.melody, this.melodyMuted);
 
-      this.events.push({type:'loop-melody', time});
+      this.events.push({ type: "loop-melody", time });
       this.addSequenceWithOffset(seq, this.melody, time, -1, -1);
     }
     if (this.drums) {
@@ -126,8 +145,7 @@ class AudioLoop {
       }
       this.visualizer.showDrums(this.drums, this.drumsMuted);
 
-
-      this.events.push({type:'loop-drums', time});
+      this.events.push({ type: "loop-drums", time });
       this.addSequenceWithOffset(seq, this.drums, time, -1, -1);
     }
     return seq;
@@ -158,7 +176,10 @@ class AudioLoop {
       this.playerDrums.currentPart.mute = this.drumsMuted;
     }
     this.visualizer.showDrums(this.drums, this.drumsMuted);
-    this.events.push({type: this.drumsMuted ? 'mute-drums' : 'unmute-drums', time});
+    this.events.push({
+      type: this.drumsMuted ? "mute-drums" : "unmute-drums",
+      time,
+    });
   }
 
   toggleMelody(time) {
@@ -167,7 +188,10 @@ class AudioLoop {
       this.playerMelody.currentPart.mute = this.melodyMuted;
     }
     this.visualizer.showMelody(this.melody, this.melodyMuted);
-    this.events.push({type: this.melodyMuted ? 'mute-melody' : 'unmute-melody', time});
+    this.events.push({
+      type: this.melodyMuted ? "mute-melody" : "unmute-melody",
+      time,
+    });
   }
 
   addLoops(recording, inputOffset, recordingEndsAt) {
@@ -180,29 +204,41 @@ class AudioLoop {
       const time = this.events[e].time - inputOffset;
 
       switch (type) {
-        case 'add-drums':
+        case "add-drums":
           currentDrums = this.events[e].seq;
           break;
-        case 'add-melody':
+        case "add-melody":
           currentMelody = this.events[e].seq;
           break;
-        case 'mute-drums':
+        case "mute-drums":
           drumsMutedAt = time;
           break;
-        case 'mute-melody':
+        case "mute-melody":
           melodyMutedAt = time;
           break;
-        case 'unmute-drums':
+        case "unmute-drums":
           drumsMutedAt = -1;
           break;
-        case 'unmute-melody':
+        case "unmute-melody":
           melodyMutedAt = -1;
           break;
-        case 'loop-drums':
-          this.addSequenceWithOffset(recording, currentDrums, time, drumsMutedAt, recordingEndsAt);
+        case "loop-drums":
+          this.addSequenceWithOffset(
+            recording,
+            currentDrums,
+            time,
+            drumsMutedAt,
+            recordingEndsAt
+          );
           break;
-        case 'loop-melody':
-          this.addSequenceWithOffset(recording, currentMelody, time, melodyMutedAt, recordingEndsAt);
+        case "loop-melody":
+          this.addSequenceWithOffset(
+            recording,
+            currentMelody,
+            time,
+            melodyMutedAt,
+            recordingEndsAt
+          );
           break;
       }
     }
@@ -215,7 +251,6 @@ class AudioLoop {
 
       if (recordingEndsAt !== -1 && offsetStartTime >= recordingEndsAt) {
         continue;
-
       }
       // Only add this note if it's not muted.
       if (mutedAt === -1 || offsetStartTime < mutedAt) {
@@ -226,17 +261,19 @@ class AudioLoop {
           isDrum: note.isDrum || false,
           instrument: note.instrument || 0,
           startTime: offsetStartTime,
-          endTime: note.endTime + offset
+          endTime: note.endTime + offset,
         });
       }
     }
   }
 
   patchDrumsPlayerChannel() {
-    this.playerDrums.playNote = function(time, note) {
+    this.playerDrums.playNote = function (time, note) {
+      // TODO: patch serial port
+
       // Some good defaults.
       const velocity = note.velocity || 100;
-      const length = (note.endTime - note.startTime) * 1000;  // in ms.
+      const length = (note.endTime - note.startTime) * 1000; // in ms.
 
       const msgOn = [this.NOTE_ON + 1, note.pitch, velocity];
       const msgOff = [this.NOTE_OFF + 1, note.pitch, velocity];
@@ -245,8 +282,11 @@ class AudioLoop {
       for (let i = 0; i < outputs.length; i++) {
         this.sendMessageToOutput(outputs[i], msgOn);
         this.sendMessageToOutput(
-            outputs[i], msgOff, window.performance.now() + length);
+          outputs[i],
+          msgOff,
+          window.performance.now() + length
+        );
       }
-    }
+    };
   }
 }
